@@ -103,8 +103,6 @@ ls -lah | egrep '.mp4|.webm|.jpg'
 -rw-r--r-- 1 root  nginx  32K Sep  1 08:18 cmm-centmin.sh-menu.jpg
 -rw-r--r-- 1 root  nginx 9.3M Sep  1 05:32 cmm-centmin.sh-menu.mp4
 -rw-r--r-- 1 root  nginx 6.9M Sep  1 07:44 cmm-centmin.sh-menu.webm
--rw-r--r-- 1 root  nginx  788 Sep  1 09:02 index-mp4.html
--rw-r--r-- 1 root  nginx  788 Sep  1 09:02 index-webm.html
 ```
 
 3. Visual Check
