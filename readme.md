@@ -100,7 +100,6 @@ ls -lah | egrep '.mp4|.webm|.jpg'
 -rw-r--r-- 1 root  nginx  35K Sep  1 08:18 cmm-betainstall.jpg
 -rw-r--r-- 1 root  nginx  38M Sep  1 05:28 cmm-betainstall.mp4
 -rw-r--r-- 1 root  nginx  19M Sep  1 07:54 cmm-betainstall.webm
--rw-r--r-- 1 root  nginx 6.9M Sep  1 10:31 cmm-centmin.sh-menu-fast.webm
 -rw-r--r-- 1 root  nginx  32K Sep  1 08:18 cmm-centmin.sh-menu.jpg
 -rw-r--r-- 1 root  nginx 9.3M Sep  1 05:32 cmm-centmin.sh-menu.mp4
 -rw-r--r-- 1 root  nginx 6.9M Sep  1 07:44 cmm-centmin.sh-menu.webm
