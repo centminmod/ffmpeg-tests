@@ -1,0 +1,71 @@
+<head>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.2.2/video-js.min.css" rel="stylesheet">
+
+<style type="text/css">
+.row {
+    width: 900px;
+}
+
+.column {
+    float: left;
+    width: 33.33%;
+}
+
+/* Clear floats after the columns */
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+@media screen and (max-width: 600px) {
+    .column {
+        width: 100%;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="row">
+  <div class="column">
+    <video id="my-video" class="video-js" controls preload="auto" width="289" height="216"
+    poster="cmm-centmin.sh-menu.jpg" data-setup='{"controls": true, "autoplay": false, "preload": "metadata"}'>
+      <source src="cmm-centmin.sh-menu.webm" type='video/webm'>
+      <source src="cmm-centmin.sh-menu.mp4" type='video/mp4'>
+      <p class="vjs-no-js">
+        To view this video please enable JavaScript, and consider upgrading to a web browser that
+        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+      </p>
+    </video>
+    <p>Centmin Mod shell menu (centmin.sh)</p>
+  </div>
+  <div class="column">
+    <video id="my-video" class="video-js" controls preload="auto" width="321" height="216"
+    poster="cmm-betainstall.jpg" data-setup='{"controls": true, "autoplay": false, "preload": "metadata"}'>
+      <source src="cmm-betainstall.webm" type='video/webm'>
+      <source src="cmm-betainstall.mp4" type='video/mp4'>
+      <p class="vjs-no-js">
+        To view this video please enable JavaScript, and consider upgrading to a web browser that
+        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+      </p>
+    </video>
+    <p>How to install Centmin Mod (simultaneously on CentOS 6 & 7 servers)</p>
+  </div>
+  <div class="column">
+    <video id="my-video" class="video-js" controls preload="auto" width="289" height="216"
+    poster="cmm-add-nginx-vhost.jpg" data-setup='{"controls": true, "autoplay": false, "preload": "metadata"}'>
+      <source src="cmm-add-nginx-vhost.webm" type='video/webm'>
+      <source src="cmm-add-nginx-vhost.mp4" type='video/mp4'>
+      <p class="vjs-no-js">
+        To view this video please enable JavaScript, and consider upgrading to a web browser that
+        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+      </p>
+    </video>
+    <p>How to add Nginx vhost site to Centmin Mod LEMP stack servers</p>
+  </div>
+
+  <script>window.HELP_IMPROVE_VIDEOJS = false;</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.2.2/video.min.js"></script>
+</body>
