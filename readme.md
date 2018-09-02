@@ -38,6 +38,22 @@ alias ffmpeg='/opt/bin/ffmpeg'
 alias ffprobe='/opt/bin/ffprobe'
 ```
 
+There maybe other binaries you would want to alias to
+
+```
+ls -lah /opt/bin 
+total 11M
+drwxr-xr-x   2 root root   98 Sep  1 06:49 .
+drwxr-xr-x. 16 root root  269 Sep  1 06:41 ..
+-rwxr-xr-x   1 root root 242K Sep  1 06:49 ffmpeg
+-rwxr-xr-x   1 root root 141K Sep  1 06:49 ffprobe
+-rwxr-xr-x   1 root root 474K Sep  1 06:44 lame
+-rwxr-xr-x   1 root root 2.5M Sep  1 06:41 vsyasm
+-rwxr-xr-x   1 root root 2.4M Sep  1 06:41 x264
+-rwxr-xr-x   1 root root 2.5M Sep  1 06:41 yasm
+-rwxr-xr-x   1 root root 2.5M Sep  1 06:41 ytasm
+```
+
 check FFMpeg vesion
 
 ```
