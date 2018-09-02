@@ -81,6 +81,8 @@ FFMpeg settings for conversion on Intel Xeon E3-1270v1 where there are 4 cpu cor
 * `-tile-columns` - Tiling splits the video into rectangular regions, which allows multi-threading for encoding and decoding. The number of tiles is always a power of two. 0=1 tile, 1=2, 2=4, 3=8, 4=16, 5=32.
 
 
+For FFMpeg with [VP9 based webm format](https://trac.ffmpeg.org/wiki/Encode/VP9)
+
 ```
 domain=yourdomain.com
 cd /home/nginx/domains/$domain/public/videos
@@ -103,6 +105,37 @@ ls -lah | egrep '.mp4|.webm|.jpg'
 -rw-r--r-- 1 root  nginx  32K Sep  1 08:18 cmm-centmin.sh-menu.jpg
 -rw-r--r-- 1 root  nginx 9.3M Sep  1 05:32 cmm-centmin.sh-menu.mp4
 -rw-r--r-- 1 root  nginx 6.9M Sep  1 07:44 cmm-centmin.sh-menu.webm
+```
+
+For FFMpeg with [VP8 based webm format](https://trac.ffmpeg.org/wiki/Encode/VP8)
+
+```
+domain=yourdomain.com
+cd /home/nginx/domains/$domain/public/videos
+# poster images
+for f in *.mp4; do ffmpeg -y -ss 4 -i "$f" -f image2 -vframes 1 -q:v 2 -an "${f%.mp4}.jpg"; done
+# video
+time ffmpeg -i cmm-centmin.sh-menu.mp4 -c:v libvpx -crf 10 -b:v 512K -c:a libopus -quality good -speed 2 -threads 4 cmm-centmin.sh-menu.webm
+time ffmpeg -i cmm-add-nginx-vhost.mp4 -c:v libvpx -crf 10 -b:v 512K -c:a libopus -quality good -speed 2 -threads 4 cmm-add-nginx-vhost.webm
+time ffmpeg -i cmm-betainstall.mp4 -c:v libvpx -crf 10 -b:v 512K -c:a libopus -quality good -speed 2 -threads 4 cmm-betainstall.webm
+```
+
+listing with `-vp8` suffix compared to `vp9` webm encoded files
+
+```
+ls -lah | egrep '.mp4|.webm|.jpg'
+-rw-r--r-- 1 root  nginx  35K Sep  1 08:18 cmm-add-nginx-vhost.jpg
+-rw-r--r-- 1 root  nginx  34M Sep  1 05:32 cmm-add-nginx-vhost.mp4
+-rw-r--r-- 1 root  nginx  17M Sep  2 07:44 cmm-add-nginx-vhost-vp8.webm
+-rw-r--r-- 1 root  nginx  22M Sep  1 07:57 cmm-add-nginx-vhost.webm
+-rw-r--r-- 1 root  nginx  35K Sep  1 08:18 cmm-betainstall.jpg
+-rw-r--r-- 1 root  nginx  38M Sep  1 05:28 cmm-betainstall.mp4
+-rw-r--r-- 1 root  nginx  14M Sep  2 07:54 cmm-betainstall-vp8.webm
+-rw-r--r-- 1 root  nginx  19M Sep  1 07:54 cmm-betainstall.webm
+-rw-r--r-- 1 root  nginx  32K Sep  1 08:18 cmm-centmin.sh-menu.jpg
+-rw-r--r-- 1 root  nginx 9.3M Sep  1 05:32 cmm-centmin.sh-menu.mp4
+-rw-r--r-- 1 root  nginx 8.1M Sep  2 07:35 cmm-centmin.sh-menu-vp8.webm
+-rw-r--r-- 1 root  nginx 8.1M Sep  2 07:38 cmm-centmin.sh-menu.webm
 ```
 
 3. Visual Check
