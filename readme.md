@@ -181,18 +181,15 @@ location /videos/ {
   sendfile_max_chunk 1m;
   add_header   backend-media 0;
   location ~* ^/videos/(.+\.webm)$ {
-    add_header   backend-media 1;
     add_header   backend-webm 1;
   }
   location ~* ^/videos/(.+\.mp4)$ {
-    add_header   backend-media 1;
     add_header   backend-mp4 1;
     mp4;
     mp4_buffer_size       1m;
     mp4_max_buffer_size   5m;
   }
   location ~* ^/videos/(.+\.flv)$ {
-    add_header   backend-media 1;
     add_header   backend-flv 1;
     flv;
   }
