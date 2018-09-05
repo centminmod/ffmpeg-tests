@@ -214,3 +214,35 @@ location /videos/ {
   }
 }
 ```
+
+```
+curl -I https://domain.com/videos/cmm-centmin.sh-menu.webm
+HTTP/1.1 200 OK
+Date: Wed, 05 Sep 2018 07:26:56 GMT
+Content-Type: video/webm
+Content-Length: 8421399
+Connection: keep-alive
+Last-Modified: Sun, 02 Sep 2018 07:38:31 GMT
+ETag: "5b8b9377-808017"
+X-Powered-By: centminmod
+backend-webm: 1
+Server: nginx centminmod
+Sliced: 1
+Accept-Ranges: bytes
+```
+
+```
+curl -I https://domain.com/videos/cmm-centmin.sh-menu.mp4
+HTTP/1.1 200 OK
+Date: Wed, 05 Sep 2018 07:27:53 GMT
+Content-Type: video/mp4
+Content-Length: 9730773
+Connection: keep-alive
+Last-Modified: Sat, 01 Sep 2018 05:32:09 GMT
+ETag: "5b8a2459-947ad5"
+X-Powered-By: centminmod
+backend-mp4: 1
+Server: nginx centminmod
+Sliced: 1
+Accept-Ranges: bytes
+```
