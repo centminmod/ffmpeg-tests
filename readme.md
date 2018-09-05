@@ -207,6 +207,7 @@ location /videos/ {
     slice              1m;
     proxy_cache_key    $host$uri$is_args$args$slice_range;
     proxy_set_header   Range $slice_range;
+    add_header         Sliced-Cache $upstream_cache_status;
     add_header         Sliced 1;
     proxy_http_version 1.1;
     proxy_cache_valid  200 206 6h;
@@ -218,7 +219,7 @@ location /videos/ {
 ```
 curl -I https://domain.com/videos/cmm-centmin.sh-menu.webm
 HTTP/1.1 200 OK
-Date: Wed, 05 Sep 2018 07:26:56 GMT
+Date: Wed, 05 Sep 2018 08:54:42 GMT
 Content-Type: video/webm
 Content-Length: 8421399
 Connection: keep-alive
@@ -227,14 +228,14 @@ ETag: "5b8b9377-808017"
 X-Powered-By: centminmod
 backend-webm: 1
 Server: nginx centminmod
+Sliced-Cache: HIT
 Sliced: 1
 Accept-Ranges: bytes
 ```
 
 ```
-curl -I https://domain.com/videos/cmm-centmin.sh-menu.mp4
 HTTP/1.1 200 OK
-Date: Wed, 05 Sep 2018 07:27:53 GMT
+Date: Wed, 05 Sep 2018 08:54:53 GMT
 Content-Type: video/mp4
 Content-Length: 9730773
 Connection: keep-alive
@@ -243,6 +244,55 @@ ETag: "5b8a2459-947ad5"
 X-Powered-By: centminmod
 backend-mp4: 1
 Server: nginx centminmod
+Sliced-Cache: MISS
 Sliced: 1
 Accept-Ranges: bytes
+```
+
+## Rate Limiting Speeds
+
+[Nginx Rate limiting](https://nginx.org/en/docs/http/ngx_http_core_module.html#limit_rate_after)
+
+```
+location /videos/ {
+  aio threads;
+  sendfile_max_chunk 1m;
+  location ~ \.(webm)$ {
+    add_header   backend-webm 1;
+    limit_rate_after 1500k;
+    limit_rate       350k;
+  }
+  location ~ \.(mp4)$ {
+    add_header   backend-mp4 1;
+    mp4;
+    mp4_buffer_size       1m;
+    mp4_max_buffer_size   5m;
+    limit_rate_after 1500k;
+    limit_rate       350k;
+  }
+  location ~ \.(flv)$ {
+    add_header   backend-flv 1;
+    flv;
+    limit_rate_after 1500k;
+    limit_rate       350k;
+  }
+}
+```
+
+```
+location /videos/ {
+  location ~ \.(mp4|webm|flv)$ {
+    proxy_cache mycache;
+    slice              1m;
+    proxy_cache_key    $host$uri$is_args$args$slice_range;
+    proxy_set_header   Range $slice_range;
+    add_header         Sliced-Cache $upstream_cache_status;
+    add_header         Sliced 1;
+    proxy_http_version 1.1;
+    proxy_cache_valid  200 206 6h;
+    proxy_pass         http://video_upstream;
+    limit_rate_after 1500k;
+    limit_rate       350k;
+  }
+}
 ```
