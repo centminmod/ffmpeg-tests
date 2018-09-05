@@ -157,12 +157,43 @@ Then for your mp4 videos, you can set inside your Nginx vhost config file for mp
 location /videos/ {
   aio threads;
   sendfile_max_chunk 1m;
-  location ~ \.mp4$ {
+  location ~ \.(webm)$ {
+    add_header   backend-webm 1;
+  }
+  location ~ \.(mp4)$ {
+    add_header   backend-mp4 1;
     mp4;
     mp4_buffer_size       1m;
     mp4_max_buffer_size   5m;
   }
-  location ~ \.flv$ {
+  location ~ \.(flv)$ {
+    add_header   backend-flv 1;
+    flv;
+  }
+}
+```
+
+or
+
+```
+location /videos/ {
+  aio threads;
+  sendfile_max_chunk 1m;
+  add_header   backend-media 0;
+  location ~* ^/videos/(.+\.webm)$ {
+    add_header   backend-media 1;
+    add_header   backend-webm 1;
+  }
+  location ~* ^/videos/(.+\.mp4)$ {
+    add_header   backend-media 1;
+    add_header   backend-mp4 1;
+    mp4;
+    mp4_buffer_size       1m;
+    mp4_max_buffer_size   5m;
+  }
+  location ~* ^/videos/(.+\.flv)$ {
+    add_header   backend-media 1;
+    add_header   backend-flv 1;
     flv;
   }
 }
@@ -171,3 +202,18 @@ location /videos/ {
 # Optimizations - Nginx Sliced Byte Range Caching
 
 You can further optimize video delivery by implementing [Nginx Sliced Byte-Range Caching](https://www.nginx.com/blog/smart-efficient-byte-range-caching-nginx/) in Centmin Mod Nginx as the Nginx server will be built with all required modules outlined [here](https://community.centminmod.com/threads/add-nginx_video-control-variable-in-123-09beta01.15540/).
+
+```
+location /videos/ {
+  location ~ \.(mp4|webm|flv)$ {
+    proxy_cache mycache;
+    slice              1m;
+    proxy_cache_key    $host$uri$is_args$args$slice_range;
+    proxy_set_header   Range $slice_range;
+    add_header         Sliced 1;
+    proxy_http_version 1.1;
+    proxy_cache_valid  200 206 6h;
+    proxy_pass         http://video_upstream;
+  }
+}
+```
