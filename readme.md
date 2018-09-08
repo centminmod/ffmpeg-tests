@@ -12,7 +12,7 @@ Download source videos to test `/videos` directory for your Nginx vhost `/home/n
 domain=yourdomain.com
 cd /home/nginx/domains/$domain
 mkdir -p /home/nginx/domains/$domain/public/videos
-git clone -depth=1 https://github.com/centminmod/ffmpeg-tests
+git clone https://github.com/centminmod/ffmpeg-tests
 cd ffmpeg-tests
 cp source/* /home/nginx/domains/$domain/public/videos
 cp players/videojs/index.html /home/nginx/domains/$domain/public/videos
@@ -234,6 +234,7 @@ Accept-Ranges: bytes
 ```
 
 ```
+curl -I https://domain.com/videos/cmm-centmin.sh-menu.mp4
 HTTP/1.1 200 OK
 Date: Wed, 05 Sep 2018 08:54:53 GMT
 Content-Type: video/mp4
