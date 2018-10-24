@@ -156,15 +156,16 @@ Then for your mp4 videos, you can set inside your Nginx vhost config file for mp
 ```
 location /videos/ {
   aio threads;
-  sendfile_max_chunk 1m;
+  sendfile_max_chunk 2m;
   location ~ \.(webm)$ {
     add_header   backend-webm 1;
   }
-  location ~ \.(mp4)$ {
+  location ~ \.(mp4|m4a|m4v|mov)$ {
+    keepalive_timeout 0;
     add_header   backend-mp4 1;
     mp4;
-    mp4_buffer_size       1m;
-    mp4_max_buffer_size   5m;
+    mp4_buffer_size       2m;
+    mp4_max_buffer_size   8m;
   }
   location ~ \.(flv)$ {
     add_header   backend-flv 1;
@@ -178,16 +179,17 @@ or
 ```
 location /videos/ {
   aio threads;
-  sendfile_max_chunk 1m;
+  sendfile_max_chunk 2m;
   add_header   backend-media 0;
   location ~* ^/videos/(.+\.webm)$ {
     add_header   backend-webm 1;
   }
   location ~* ^/videos/(.+\.mp4)$ {
+    keepalive_timeout 0;
     add_header   backend-mp4 1;
     mp4;
-    mp4_buffer_size       1m;
-    mp4_max_buffer_size   5m;
+    mp4_buffer_size       2m;
+    mp4_max_buffer_size   8m;
   }
   location ~* ^/videos/(.+\.flv)$ {
     add_header   backend-flv 1;
@@ -202,16 +204,20 @@ You can further optimize video delivery by implementing [Nginx Sliced Byte-Range
 
 ```
 location /videos/ {
-  location ~ \.(mp4|webm|flv)$ {
+  location ~ \.(mp4|m4a|m4v|mov|webm|flv)$ {
     proxy_cache mycache;
-    slice              1m;
+    slice              2m;
     proxy_cache_key    $host$uri$is_args$args$slice_range;
     proxy_set_header   Range $slice_range;
     add_header         Sliced-Cache $upstream_cache_status;
     add_header         Sliced 1;
     proxy_http_version 1.1;
-    proxy_cache_valid  200 206 6h;
+    proxy_cache_valid  200 206 24h;
     proxy_pass         http://video_upstream;
+    # https://nginx.org/en/docs/http/ngx_http_core_module.html#postpone_output
+    postpone_output 0;
+    proxy_buffer_size 8m;
+    proxy_buffers 32 8m;
   }
 }
 ```
@@ -257,24 +263,25 @@ Accept-Ranges: bytes
 ```
 location /videos/ {
   aio threads;
-  sendfile_max_chunk 1m;
+  sendfile_max_chunk 2m;
   location ~ \.(webm)$ {
     add_header   backend-webm 1;
-    limit_rate_after 1500k;
+    limit_rate_after 2500k;
     limit_rate       350k;
   }
-  location ~ \.(mp4)$ {
+  location ~ \.(mp4|m4a|m4v|mov)$ {
+    keepalive_timeout 0;
     add_header   backend-mp4 1;
     mp4;
-    mp4_buffer_size       1m;
-    mp4_max_buffer_size   5m;
-    limit_rate_after 1500k;
+    mp4_buffer_size       2m;
+    mp4_max_buffer_size   8m;
+    limit_rate_after 2500k;
     limit_rate       350k;
   }
   location ~ \.(flv)$ {
     add_header   backend-flv 1;
     flv;
-    limit_rate_after 1500k;
+    limit_rate_after 2500k;
     limit_rate       350k;
   }
 }
@@ -282,18 +289,174 @@ location /videos/ {
 
 ```
 location /videos/ {
-  location ~ \.(mp4|webm|flv)$ {
+  location ~ \.(mp4|m4a|m4v|mov|webm|flv)$ {
     proxy_cache mycache;
-    slice              1m;
+    slice              2m;
     proxy_cache_key    $host$uri$is_args$args$slice_range;
     proxy_set_header   Range $slice_range;
     add_header         Sliced-Cache $upstream_cache_status;
     add_header         Sliced 1;
     proxy_http_version 1.1;
-    proxy_cache_valid  200 206 6h;
+    proxy_cache_valid  200 206 24h;
     proxy_pass         http://video_upstream;
-    limit_rate_after 1500k;
+    # https://nginx.org/en/docs/http/ngx_http_core_module.html#postpone_output
+    postpone_output 0;
+    proxy_buffer_size 8m;
+    proxy_buffers 32 8m;
+    limit_rate_after 2500k;
     limit_rate       350k;
   }
 }
+```
+
+# Inspecting Nginx Byte Range Sliced Cached Files
+
+If you setup proxy_cache to save files to `/tmp/mycache`, you can inspect the cached files using a while read loop to inspect the first 8 lines of each cached file. Then check output for log saved at `inspect-cache.txt`.
+
+```
+ls -rt /tmp/mycache | while read f; do echo $f;head -n8 /tmp/mycache/$f; done > inspect-cache.txt
+```
+
+Example for time reverse ascending order listing of `/tmp/mycache` cached files where 2MB sliced cached chunks were used.
+
+```
+ls -lAhRrt /tmp/mycache
+/tmp/mycache:
+total 52M
+-rw------- 1 nginx nginx 2.1M Oct 24 04:33 478425de7a4472f74e54fee2f456e38c
+-rw------- 1 nginx nginx 2.1M Oct 24 04:37 e6fc23d32836f59515773cb1dc2507a6
+-rw------- 1 nginx nginx 2.1M Oct 24 04:37 a5190baefd6425df4731d8a54fdfdce0
+-rw------- 1 nginx nginx 2.1M Oct 24 04:37 17c1532da0b6ef9316acdba6de987552
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 e5b502a3ffcd17b30b9224a54a8911af
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 ffee1c1bba98e2014fb4d7bc195b5bb5
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 9935e066408a231b4647d1475569908e
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 10752e5e616fdf6cec214ecca4938d7e
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 ee88451e088ed4a2f425947bb3cb2627
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 9c6922c1bcee1d17ae0af583aa599ffd
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 368526299d4b2d25c810d1f442f58e6c
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 f95854a97f8d9c327af77b87bc5f15f4
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 7ef80e307c6db579b2a1a318e623ad8b
+-rw------- 1 nginx nginx 2.1M Oct 24 04:38 40c6f06296afd6e7570c2d4eadcd0a3c
+-rw------- 1 nginx nginx 2.1M Oct 24 04:39 ca501834ae0e4d8ed4323a4705aef1ee
+-rw------- 1 nginx nginx 2.1M Oct 24 04:39 65a5a9078b0b5a58516923a8239904fa
+-rw------- 1 nginx nginx 2.1M Oct 24 04:39 2a5787d729ff0980aff26c39ebe2aa1d
+-rw------- 1 nginx nginx 2.1M Oct 24 04:39 d266a8b6964c76bc0f73128395df436b
+-rw------- 1 nginx nginx 2.1M Oct 24 04:39 ce86f8955c563103ac9c894d1f011b90
+-rw------- 1 nginx nginx 1.9M Oct 24 04:39 3bde254597f06c5159c2bdb3ead50657
+-rw------- 1 nginx nginx 2.1M Oct 24 05:57 61bcc5a92e49be7ed1c7e5e50632d149
+-rw------- 1 nginx nginx 2.1M Oct 24 05:57 90cee2d67eddae74af38458014b92761
+-rw------- 1 nginx nginx 2.1M Oct 24 05:57 cc99d3c8b69f9bc5f4550f6af346a6d4
+-rw------- 1 nginx nginx 2.1M Oct 24 06:00 d0765f8f6ca207699fc814ee62e36971
+-rw------- 1 nginx nginx 2.1M Oct 24 06:01 049aa0dc42ec04cf36938549b7d6cf1a
+-rw------- 1 nginx nginx 1.3M Oct 24 06:01 0f7f37eeebde5b4a335f2f9da21ba016
+```
+
+Using the while read loop to inspect headers, the excerpt of last 3 cached files inspections
+
+```
+ls -rt /tmp/mycache | while read f; do echo $f;head -n8 /tmp/mycache/$f; done > inspect-cache.txt
+
+"5b8a2459-947ad5"
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=4194304-6291455
+HTTP/1.1 206 Partial Content
+Date: Wed, 24 Oct 2018 06:00:59 GMT
+Content-Type: video/mp4
+Content-Length: 2097152
+Last-Modified: Sat, 01 Sep 2018 05:32:09 GMT
+
+"5b8a2459-947ad5"
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=6291456-8388607
+HTTP/1.1 206 Partial Content
+Date: Wed, 24 Oct 2018 06:01:05 GMT
+Content-Type: video/mp4
+Content-Length: 2097152
+Last-Modified: Sat, 01 Sep 2018 05:32:09 GMT
+
+"5b8a2459-947ad5"
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=8388608-10485759
+HTTP/1.1 206 Partial Content
+Date: Wed, 24 Oct 2018 06:01:11 GMT
+Content-Type: video/mp4
+Content-Length: 1342165
+Last-Modified: Sat, 01 Sep 2018 05:32:09 GMT
+```
+
+Then check output for log saved at `inspect-cache.txt` using grep with `-a` flag to treat binary files as text.
+
+To check all slicked cached chunked byte ranges for `cmm-centmin.sh-menu.mp4` video file
+
+```
+grep -a 'cmm-centmin.sh-menu.mp4' inspect-cache.txt 
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=0-2097151
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=2097152-4194303
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=4194304-6291455
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=6291456-8388607
+KEY: domain.com/videos/cmm-centmin.sh-menu.mp4bytes=8388608-10485759
+```
+
+for `cmm-betainstall.mp4`
+
+```
+grep -a 'cmm-betainstall.mp4' inspect-cache.txt                   
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=0-2097151
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=2097152-4194303
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=4194304-6291455
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=6291456-8388607
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=8388608-10485759
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=10485760-12582911
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=12582912-14680063
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=14680064-16777215
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=16777216-18874367
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=18874368-20971519
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=20971520-23068671
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=23068672-25165823
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=25165824-27262975
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=27262976-29360127
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=29360128-31457279
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=31457280-33554431
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=33554432-35651583
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=35651584-37748735
+KEY: domain.com/videos/cmm-betainstall.mp4bytes=37748736-39845887
+```
+
+for `cmm-add-nginx-vhost.mp4`
+
+```
+grep -a 'cmm-add-nginx-vhost.mp4' inspect-cache.txt
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=0-2097151
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=2097152-4194303
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=4194304-6291455
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=6291456-8388607
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=8388608-10485759
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=10485760-12582911
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=12582912-14680063
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=14680064-16777215
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=16777216-18874367
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=18874368-20971519
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=20971520-23068671
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=23068672-25165823
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=25165824-27262975
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=27262976-29360127
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=29360128-31457279
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=31457280-33554431
+KEY: domain.com/videos/cmm-add-nginx-vhost.mp4bytes=33554432-35651583
+```
+
+Checking header for byte range request (2097152-4194303) for `https://domain.com/videos/cmm-add-nginx-vhost.mp4`
+
+```
+curl -I -r 2097152-4194303 https://domain.com/videos/cmm-add-nginx-vhost.mp4
+HTTP/1.1 206 Partial Content
+Date: Wed, 24 Oct 2018 07:05:38 GMT
+Content-Type: video/mp4
+Content-Length: 2097152
+Connection: keep-alive
+Last-Modified: Sat, 01 Sep 2018 05:32:58 GMT
+ETag: "5b8a248a-21c5057"
+X-Powered-By: centminmod
+backend-mp4: 1
+Server: nginx centminmod
+Sliced-Cache: HIT
+Sliced: 1
+Content-Range: bytes 2097152-4194303/35410007
 ```
