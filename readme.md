@@ -260,45 +260,104 @@ Accept-Ranges: bytes
 
 ## Purging proxy_cache entries
 
-Part of `proxy_cache` setup is configuring `proxy_cache_purge` via [ngx_cache_purge ngnx module](https://github.com/nginx-modules/ngx_cache_purge) using.
+Normally as part of `proxy_cache` setup is configuring `proxy_cache_purge` via [ngx_cache_purge ngnx module](https://github.com/nginx-modules/ngx_cache_purge). However, due to sliced 2MB cached chunks for the video files, it is hardware to purge as the video file maybe broken up into hundreds of 2MB cached files. So I wrote a shell script to be able to purge the cached chunks from cache directory itself
+
+`purge-videos.sh`
 
 ```
-    # https://github.com/nginx-modules/ngx_cache_purge
-    proxy_cache_purge  PURGE from 127.0.0.1;
+#!/bin/bash
+# purge sliced cache byte ranged video files
+debug='y'
+cachedir='/tmp/mycache'
+cachefile='/tmp/videocache_entries.txt'
+purge_list_file='/tmp/videocache_purge_list.txt'
+purge_cmd_file='/tmp/videocache_purge_cmds.txt'
+
+do_purge() {
+  fileuri=$1
+  mode=$2
+  if [[ ! -z "$fileuri" ]]; then
+    echo "Found cached entries for $fileuri"
+    echo
+    find $cachedir -type f | while read f; do grep -Ha "$fileuri" $f; done > $cachefile
+    if [ -f "$cachefile" ]; then
+      {
+      #echo "Filename | Cache-KEY"
+      awk -F ':KEY: ' '{print $1" | "$2}' $cachefile > $purge_list_file
+      } 2>&1 | column -t
+    fi
+    if [ "$mode" = 'list' ]; then
+      echo "Output Format"
+      echo
+      echo "# cache-key"
+      echo "rm -rf cache-filename"
+      echo
+      if [ -f "$purge_list_file" ]; then
+        awk '{print "# "$3"\nrm -rf",$1}' $purge_list_file | tee $purge_cmd_file
+      fi
+      echo
+    fi
+    if [ "$mode" = 'purge' ]; then
+      if [ -f "$purge_cmd_file" ]; then
+        if [[ "$debug" = [yY] ]]; then
+          echo "purge [debug mode]"
+          cat $purge_cmd_file
+        else
+          echo "purge"
+          cat $purge_cmd_file
+        fi
+      fi
+    fi
+  fi
+}
+
+help() {
+  echo "$0 list /path/to/filename.mp4"
+  echo "$0 purge /path/to/filename.mp4"
+}
+
+case "$1" in
+  list )
+    if [ ! -z "$2" ]; then
+      do_purge $2 list
+    else
+      help
+    fi
+    ;;
+  purge )
+    if [ ! -z "$2" ]; then
+      do_purge $2 purge
+    else
+      help
+    fi
+    ;;
+  * )
+    help
+    ;;
+esac
 ```
 
-You'll need to add your server IP address to allowed list
+Example run for `purge-videos.sh` with `list` command passing the directory and file name you want to lookup in cache where each sliced cached chunk has a corresponding cache filername and cache key.
 
 ```
-    # https://github.com/nginx-modules/ngx_cache_purge
-    proxy_cache_purge  PURGE from 127.0.0.1 YOURSERVER_IP;
-```
+./purge-videos.sh list /videos/cmm-centmin.sh-menu.mp4        
+Found cached entries for /videos/cmm-centmin.sh-menu.mp4
 
-Then you can purge specific urls via curl command. If cached item exists, curl will return HTTP 200 status code
+Output Format
 
-```
-curl -I -X PURGE https://domain.com/videos/cmm-centmin.sh-menu.mp4
-HTTP/1.1 200 OK
-Date: Thu, 25 Oct 2018 15:56:05 GMT
-Content-Type: text/html
-Content-Length: 253
-Connection: keep-alive
-Server: nginx centminmod
-X-Powered-By: centminmod
-Sliced: 1
-```
+# cache-key
+rm -rf cache-filename
 
-If cached item does not exist will return 404 or 412 HTTP status code
-
-```
-curl -I -X PURGE https://domain.com/videos/cmm-centmin.sh-menu.mp4
-HTTP/1.1 412 Precondition Failed
-Date: Thu, 25 Oct 2018 16:00:28 GMT
-Content-Type: text/html; charset=utf-8
-Content-Length: 166
-Connection: keep-alive
-Server: nginx centminmod
-X-Powered-By: centminmod
+# domain.com/videos/cmm-centmin.sh-menu.mp4bytes=8388608-10485759
+rm -rf /tmp/mycache/0f7f37eeebde5b4a335f2f9da21ba016
+# domain.com/videos/cmm-centmin.sh-menu.mp4bytes=6291456-8388607
+rm -rf /tmp/mycache/049aa0dc42ec04cf36938549b7d6cf1a
+# domain.com/videos/cmm-centmin.sh-menu.mp4bytes=4194304-6291455
+rm -rf /tmp/mycache/d0765f8f6ca207699fc814ee62e36971
+# domain.com/videos/cmm-centmin.sh-menu.mp4bytes=2097152-4194303
+rm -rf /tmp/mycache/90cee2d67eddae74af38458014b92761
+# domain.com/videos/cmm-centmin.sh-menu.mp4bytes=0-2097151
+rm -rf /tmp/mycache/61bcc5a92e49be7ed1c7e5e50632d149
 ```
 
 ## Rate Limiting Speeds
