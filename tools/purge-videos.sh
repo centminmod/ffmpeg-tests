@@ -12,7 +12,7 @@ do_purge() {
   if [[ ! -z "$fileuri" ]]; then
     echo "Found cached entries for $fileuri"
     echo
-    find $cachedir -type f | while read f; do grep -Ha "$fileuri" $f; done > $cachefile
+    find $cachedir -type f | while read f; do grep -Ha 'KEY: ' $f | fgrep -a "$fileuri"; done > $cachefile
     if [ -f "$cachefile" ]; then
       {
       #echo "Filename | Cache-KEY"
