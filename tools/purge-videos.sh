@@ -37,7 +37,7 @@ do_purge() {
           cat $purge_cmd_file
         else
           echo "purge"
-          cat $purge_cmd_file
+          bash $purge_cmd_file
         fi
       fi
     fi
