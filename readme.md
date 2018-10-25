@@ -218,6 +218,8 @@ location /videos/ {
     postpone_output 0;
     proxy_buffer_size 8m;
     proxy_buffers 32 8m;
+    # https://github.com/nginx-modules/ngx_cache_purge
+    proxy_cache_purge  PURGE from 127.0.0.1;
   }
 }
 ```
@@ -254,6 +256,49 @@ Server: nginx centminmod
 Sliced-Cache: MISS
 Sliced: 1
 Accept-Ranges: bytes
+```
+
+## Purging proxy_cache entries
+
+Part of `proxy_cache` setup is configuring `proxy_cache_purge` via [ngx_cache_purge ngnx module](https://github.com/nginx-modules/ngx_cache_purge) using.
+
+```
+    # https://github.com/nginx-modules/ngx_cache_purge
+    proxy_cache_purge  PURGE from 127.0.0.1;
+```
+
+You'll need to add your server IP address to allowed list
+
+```
+    # https://github.com/nginx-modules/ngx_cache_purge
+    proxy_cache_purge  PURGE from 127.0.0.1 YOURSERVER_IP;
+```
+
+Then you can purge specific urls via curl command. If cached item exists, curl will return HTTP 200 status code
+
+```
+curl -I -X PURGE https://domain.com/videos/cmm-centmin.sh-menu.mp4
+HTTP/1.1 200 OK
+Date: Thu, 25 Oct 2018 15:56:05 GMT
+Content-Type: text/html
+Content-Length: 253
+Connection: keep-alive
+Server: nginx centminmod
+X-Powered-By: centminmod
+Sliced: 1
+```
+
+If cached item does not exist will return 404 or 412 HTTP status code
+
+```
+curl -I -X PURGE https://domain.com/videos/cmm-centmin.sh-menu.mp4
+HTTP/1.1 412 Precondition Failed
+Date: Thu, 25 Oct 2018 16:00:28 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 166
+Connection: keep-alive
+Server: nginx centminmod
+X-Powered-By: centminmod
 ```
 
 ## Rate Limiting Speeds
@@ -305,6 +350,8 @@ location /videos/ {
     proxy_buffers 32 8m;
     limit_rate_after 2500k;
     limit_rate       350k;
+    # https://github.com/nginx-modules/ngx_cache_purge
+    proxy_cache_purge  PURGE from 127.0.0.1;
   }
 }
 ```
