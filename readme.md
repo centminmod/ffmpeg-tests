@@ -209,6 +209,7 @@ location /videos/ {
     slice              2m;
     proxy_cache_key    $host$uri$is_args$args$slice_range;
     proxy_set_header   Range $slice_range;
+    add_header Accept-Ranges bytes;
     add_header         Sliced-Cache $upstream_cache_status;
     add_header         Sliced 1;
     proxy_http_version 1.1;
@@ -331,6 +332,7 @@ location /videos/ {
     slice              2m;
     proxy_cache_key    $host$uri$is_args$args$slice_range;
     proxy_set_header   Range $slice_range;
+    add_header Accept-Ranges bytes;
     add_header         Sliced-Cache $upstream_cache_status;
     add_header         Sliced 1;
     proxy_http_version 1.1;
