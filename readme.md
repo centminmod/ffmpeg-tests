@@ -261,14 +261,14 @@ Accept-Ranges: bytes
 
 ## Purging proxy_cache entries
 
-Normally as part of `proxy_cache` setup is configuring `proxy_cache_purge` via [ngx_cache_purge ngnx module](https://github.com/nginx-modules/ngx_cache_purge). However, due to sliced 2MB cached chunks for the video files, it is hardware to purge as the video file maybe broken up into hundreds of 2MB cached files. So I wrote a `purge-videos.sh` shell script to be able to purge the cached chunks from cache directory itself.
+Normally as part of `proxy_cache` setup is configuring `proxy_cache_purge` via [ngx_cache_purge ngnx module](https://github.com/nginx-modules/ngx_cache_purge). However, due to sliced 2MB cached chunks for the video files, it is harder to purge as the video file maybe broken up into hundreds of 2MB cached files. So I wrote a `purge-videos.sh` shell script to be able to purge the cached chunks from cache directory itself.
 
 Command Usage:
 
 ```
 ./purge-videos.sh /videos/cmm-centmin.sh-menu.mp4
-/root//tools/purge-videos.sh list /path/to/filename.mp4
-/root//tools/purge-videos.sh purge /path/to/filename.mp4
+/root/tools/purge-videos.sh list /path/to/filename.mp4
+/root/tools/purge-videos.sh purge /path/to/filename.mp4
 ```
 
 Example run for `purge-videos.sh` with `list` command passing the directory and file name you want to lookup in cache where each sliced cached chunk has a corresponding cache filername and cache key.
